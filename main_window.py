@@ -68,7 +68,7 @@ class PlayerWindow(UIMainWindow):
                 'y2': arr[:, 1, 1]
             }
             df = pd.DataFrame(dict)
-            df.to_csv('data.csv')
+            df.to_csv('data/data.csv')
             print("Data saved")
 
         @self.menu_panel.actionAbout.set_trigger_func

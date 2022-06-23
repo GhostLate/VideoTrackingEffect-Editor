@@ -3,7 +3,7 @@ from scipy.ndimage import gaussian_filter1d
 from matplotlib import pyplot as plt
 
 import pandas as pd
-data = pd.read_csv('data.csv')
+data = pd.read_csv('data/data.csv')
 
 start = 0
 slice = data['x1'].size
