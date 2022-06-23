@@ -133,7 +133,7 @@ def save_media(exist_path, save_path, rects, save_resolution: (int, int)):
     process2 = (
         ffmpeg
         .input('pipe:', format='rawvideo', pix_fmt='rgb24', s='{}x{}'.format(save_resolution[0], save_resolution[1]))
-        .output(ffmpeg.input("/home/ghost/Desktop/MotionDown/sample.mp4"), save_path, pix_fmt='yuv422p')
+        .output(ffmpeg.input(exist_path), save_path, pix_fmt='yuv422p')
         .overwrite_output()
         .run_async(pipe_stdin=True)
     )
