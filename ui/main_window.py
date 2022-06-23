@@ -1,19 +1,27 @@
+import yaml
 from PySide6.QtWidgets import (QMainWindow, QStatusBar, QVBoxLayout,
                                QWidget)
+
 from resources import Icons
 from ui.player_layouts import ControlPanel, TimePanel, VideoPanel, MenuPanel
 
 
 class UIMainWindow(QMainWindow):
+
     def __init__(self):
         super().__init__()
+        try:
+            with open('config.yaml') as f:
+                self.config = yaml.safe_load(f)
+                self.icons = Icons(self.config)
+        except EnvironmentError:  # parent of IOError, OSError *and* WindowsError where available
+            self.show_status_message("Error, can't load/find config file! ")
+
         self.centralWidget = QWidget(self)
         self.centralWidget.setObjectName(u"centralWidget")
 
         self.statusbar = QStatusBar(self)
         self.statusbar.setObjectName(u"statusbar")
-
-        self.icons = Icons()
 
         self.menu_panel = MenuPanel(self)
         self.video_panel = VideoPanel(self)

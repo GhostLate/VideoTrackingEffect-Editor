@@ -4,12 +4,12 @@ import cv2
 import numpy as np
 from PySide6.QtCore import Slot
 from PySide6.QtMultimedia import QMediaPlayer, QVideoFrame, QVideoSink
-
-from ui.main_window import UIMainWindow
-from ui.player_widgets import PlayerResizableRect
 from utils.media_utils import MediaFormat, ms_to_hours, MetaData
 from utils.object_tracking import ObjectTracker
 from utils.video_handler import FrameProvider, q_image2numpy
+
+from ui.main_window import UIMainWindow
+from ui.player_widgets import PlayerResizableRect
 
 
 class MediaPlayer(QMediaPlayer):

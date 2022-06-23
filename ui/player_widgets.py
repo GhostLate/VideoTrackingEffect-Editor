@@ -4,7 +4,7 @@ from utils.custom_widgets import TwoStateButton, OneStateButton, CustomSlider
 from utils.resizable_rect import ResizableRect
 
 
-class PlayPauseBotton(TwoStateButton):
+class PlayPauseButton(TwoStateButton):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -45,7 +45,7 @@ class Next10Button(OneStateButton):
 
 
 class VolumeSlider(CustomSlider):
-    def __init__(self, object_name: str = None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setOrientation(Qt.Horizontal)
         self.setMinimumWidth(100)
@@ -61,7 +61,7 @@ class VolumeSlider(CustomSlider):
 
 
 class TimeSlider(CustomSlider):
-    def __init__(self, object_name: str = None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setOrientation(Qt.Horizontal)
 
@@ -144,7 +144,6 @@ class PlayerResizableRect(ResizableRect):  # remove round()
 
     def get_limit_box(self):
         pix_window_res = list(self.parent.size().toTuple())
-        window_res = self.pix2window_res(pix_window_res)
         frame_res = self.frame_res
         pix_frame_res = self.frame_res2pix(frame_res, pix_window_res)
         limit_box = [[0, 0], pix_window_res]

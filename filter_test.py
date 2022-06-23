@@ -1,24 +1,23 @@
 import numpy as np
-from scipy.ndimage import gaussian_filter1d
-from matplotlib import pyplot as plt
-
 import pandas as pd
+from matplotlib import pyplot as plt
+from scipy.ndimage import gaussian_filter1d
+
 data = pd.read_csv('data/data.csv')
 
 start = 0
-slice = data['x1'].size
-x = range(start, slice)
+end = data['x1'].size
+x = range(start, end)
 
-x1 = data['x1'][start:slice].values
-y1 = data['y1'][start:slice].values
-x2 = data['x2'][start:slice].values
-y2 = data['y2'][start:slice].values
+x1 = data['x1'][start:end].values
+y1 = data['y1'][start:end].values
+x2 = data['x2'][start:end].values
+y2 = data['y2'][start:end].values
 
 x_c = np.round((x1 + x2) / 2).astype(int)
 y_c = np.round((y1 + y2) / 2).astype(int)
 x_l = np.round(x2 - x1).astype(int)
 y_l = np.round(y2 - y1).astype(int)
-len = slice - start
 
 y_g = gaussian_filter1d(y_c, 10)
 x_g = gaussian_filter1d(x_c, 10)

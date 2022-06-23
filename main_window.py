@@ -2,7 +2,7 @@ import sys
 
 from PySide6.QtCore import QStandardPaths
 from PySide6.QtWidgets import QApplication, QDialog, QFileDialog
-from qt_material import apply_stylesheet
+import qt_material
 
 from ui.main_window import UIMainWindow
 from utils.audio_output import AudioOutput
@@ -57,17 +57,17 @@ class PlayerWindow(UIMainWindow):
 
         @self.menu_panel.actionSave_As.set_trigger_func
         def onSaveAsVideo():
-            #onSaveVideo()
+            # onSaveVideo()
             import pandas as pd
             import numpy as np
             arr = np.array(self.media_player.mod_frame_rect)
-            dict = {
+            rect_dict = {
                 'x1': arr[:, 0, 0],
                 'y1': arr[:, 0, 1],
                 'x2': arr[:, 1, 0],
                 'y2': arr[:, 1, 1]
             }
-            df = pd.DataFrame(dict)
+            df = pd.DataFrame(rect_dict)
             df.to_csv('data/data.csv')
             print("Data saved")
 
@@ -83,6 +83,9 @@ class PlayerWindow(UIMainWindow):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     main_win = PlayerWindow()
-    apply_stylesheet(app, theme='light_cyan_500.xml')
+    if main_win.config['SETTINGS']['dark_mod']:
+        qt_material.apply_stylesheet(app, theme=main_win.config['SETTINGS']['dark_mod_theme'])
+    else:
+        qt_material.apply_stylesheet(app, theme=main_win.config['SETTINGS']['white_mod_theme'])
     main_win.show()
     sys.exit(app.exec())

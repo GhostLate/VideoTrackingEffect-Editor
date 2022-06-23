@@ -1,0 +1,30 @@
+ICONS:
+  DARK:
+    equalizer_icon: 'icons/equalizer.png'
+    play_icon: 'icons/play.png'
+    pause_icon: 'icons/pause.png'
+    stop_icon: 'icons/stop.png'
+    back_icon: 'icons/back.png'
+    next_icon: 'icons/next.png'
+    back_10_icon: 'icons/back_10.png'
+    next_10_icon: 'icons/next_10.png'
+    speaker_off_icon: 'icons/speaker_off.png'
+    speaker_on_icon: 'icons/speaker_on.png'
+    replay_icon: 'icons/replay.png'
+  WHITE:
+    equalizer_icon: 'icons/equalizer_white.png'
+    play_icon: 'icons/play_white.png'
+    pause_icon: 'icons/pause_white.png'
+    stop_icon: 'icons/stop_white.png'
+    back_icon: 'icons/back_white.png'
+    next_icon: 'icons/next_white.png'
+    back_10_icon: 'icons/back_10_white.png'
+    next_10_icon: 'icons/next_10_white.png'
+    speaker_off_icon: 'icons/speaker_off_white.png'
+    speaker_on_icon: 'icons/speaker_on_white.png'
+    replay_icon: 'icons/replay_white.png'
+
+SETTINGS:
+  dark_mod: True
+  dark_mod_theme: 'dark_purple.xml'
+  white_mod_theme: 'light_cyan_500.xml'

@@ -2,15 +2,15 @@ from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtWidgets import (QHBoxLayout,
                                QLabel, QMenu,
                                QMenuBar, QSizePolicy, QSpacerItem)
-
-from ui.player_widgets import PlayPauseBotton, SettingsButton, BackButton, NextButton, \
-    VolumeButton, VolumeSlider, TimeSlider, Next10Button, Back10Button
 from utils.custom_widgets import CustomAction
+
+from ui.player_widgets import PlayPauseButton, SettingsButton, BackButton, NextButton, \
+    VolumeButton, VolumeSlider, TimeSlider, Next10Button, Back10Button
 
 
 class ControlPanel:
     def __init__(self, icons, parent=None):
-        self.playButton = PlayPauseBotton(parent=parent,
+        self.playButton = PlayPauseButton(parent=parent,
                                           clicked_icon=icons.play_icon,
                                           unclicked_icon=icons.pause_icon,
                                           object_name=u"playButton")
@@ -105,7 +105,7 @@ class VideoPanel:
     def __init__(self, parent=None):
         self.layout = QHBoxLayout()
         self.layout.setSpacing(1)
-        self.layout.setObjectName(u"videolLayout")
+        self.layout.setObjectName(u"videoLayout")
 
         self.videoWidget_1 = QVideoWidget(parent=parent)
         self.videoWidget_1.setObjectName(u"wigglyWidget_2")

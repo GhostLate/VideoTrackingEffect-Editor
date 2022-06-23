@@ -1,8 +1,8 @@
 import sys
+
 import cv2
 import ffmpeg
 import numpy as np
-
 from PySide6.QtCore import QUrl
 from PySide6.QtMultimedia import QMediaFormat
 from scipy.ndimage import gaussian_filter1d

@@ -20,7 +20,7 @@ class OneStateButton(QToolButton):
 
 
 class TwoStateButton(QToolButton):
-    def __init__(self, clicked_icon: QIcon, unclicked_icon: QIcon, object_name: str=None, *args, **kwargs):
+    def __init__(self, clicked_icon: QIcon, unclicked_icon: QIcon, object_name: str = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not object_name:
             self.setObjectName(object_name)
