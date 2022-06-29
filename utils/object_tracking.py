@@ -1,10 +1,11 @@
 import cv2
+import numpy as np
 
 
 class ObjectTracker:
-    frame_shape: tuple
+    frame_shape: np.array
     bbox_exist: bool
-    bbox: [[int, int], [int, int]]
+    bbox: np.array
 
     def __init__(self, tracker_type=None, res_rate=1):
         """
@@ -31,39 +32,35 @@ class ObjectTracker:
     def update_frame(self, frame):
         self.bbox_exist, bbox = self.tracker.update(self.prepare_frame(frame))
         if self.bbox_exist:
-            bbox = self.fix_bbox(format_bbox(bbox))
-            bbox = [[round(bbox[0][0] * self.res_rate), round(bbox[0][1] * self.res_rate)],
-                    [round(bbox[1][0] * self.res_rate), round(bbox[1][1] * self.res_rate)]]
-            if bbox:
+            bbox = np.round(format_bbox(bbox) * self.res_rate).astype(int)
+            bbox = self.fix_bbox(bbox)
+            if bbox is not None:
                 self.bbox = bbox
                 return self.bbox_exist, self.bbox
         return False, self.bbox
 
     def update_roi(self, frame, bbox):
-        self.frame_shape = frame.shape
+        self.frame_shape = np.array(frame.shape)
         bbox = self.fix_bbox(bbox)
-        if bbox:
+        bbox = np.round(bbox / self.res_rate).astype(int)
+        if bbox is not None:
             self.bbox = bbox
-            bbox = [[round(bbox[0][0] / self.res_rate), round(bbox[0][1] / self.res_rate)],
-                    [round(bbox[1][0] / self.res_rate), round(bbox[1][1] / self.res_rate)]]
             self.bbox_exist = self.tracker.init(self.prepare_frame(frame), flatten_bbox(bbox))
             return self.bbox_exist
         else:
             return False
 
-    def fix_bbox(self, bbox: [[int, int], [int, int]]):
-        if 0 < bbox[1][0] < self.frame_shape[1] and 0 < bbox[1][1] < self.frame_shape[0]:
-            if bbox[0][0] < 0:
-                bbox[0][0] = 0
-            if bbox[0][1] < 0:
-                bbox[0][1] = 0
+    def fix_bbox(self, bbox: np.array):
+        bbox[:, 0] = np.clip(bbox[:, 0], 0, self.frame_shape[1] - 1)
+        bbox[:, 1] = np.clip(bbox[:, 1], 0, self.frame_shape[0] - 1)
+        if np.array(bbox[0, :] < bbox[1, :]).all():
             return bbox
         return None
 
 
-def flatten_bbox(bbox: [[int, int], [int, int]]):
+def flatten_bbox(bbox: np.array):
     return [bbox[0][0], bbox[0][1], bbox[1][0] - bbox[0][0], bbox[1][1] - bbox[0][1]]
 
 
 def format_bbox(bbox: [int, int, int, int]):
-    return [list([bbox[0], bbox[1]]), list([bbox[0] + bbox[2], bbox[1] + bbox[3]])]
+    return np.array(([bbox[0], bbox[1]], [bbox[0] + bbox[2], bbox[1] + bbox[3]]))

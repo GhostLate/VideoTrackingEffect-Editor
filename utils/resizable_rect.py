@@ -1,5 +1,6 @@
 import operator
 
+import numpy as np
 from PySide6 import QtWidgets, QtCore, QtGui
 from PySide6.QtCore import QSize, QPoint, Qt
 from PySide6.QtGui import QCursor
@@ -50,7 +51,7 @@ class ResizableRect(QtWidgets.QWidget):
             self.setCursor(QCursor(Qt.ArrowCursor))
 
         if event.buttons() & QtCore.Qt.MouseButton.RightButton and self.moving:
-            self.move_save(event, event.position().toPoint() - self.mousePressPos + self.pos())
+            self.move_save_mod(event, event.position().toPoint() - self.mousePressPos + self.pos())
 
         elif event.buttons() & QtCore.Qt.MouseButton.LeftButton and self.resizing:
             mouseMovePos = event.position().toPoint()
@@ -71,7 +72,7 @@ class ResizableRect(QtWidgets.QWidget):
             elif (onTopBorder or onBottomBorder) and not (onLeftBorder or onRightBorder):
                 point_1 = QPoint(0, point_1.y())
                 point_2 = QPoint(self.size().width(), point_2.y())
-            self.resize_save(event, self.pos() + point_1, self.pos() + point_2)
+            self.resize_save_mod(event, self.pos() + point_1, self.pos() + point_2)
 
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
@@ -80,24 +81,24 @@ class ResizableRect(QtWidgets.QWidget):
             self.moving = False
 
     def get_pix_cords(self) -> [[int, int], [int, int]]:
-        return [list(self.pos().toTuple()), list(map(operator.add, self.pos().toTuple(), self.size().toTuple()))]
+        pos = np.array(self.pos().toTuple())
+        size = np.array(self.size().toTuple())
+        return np.vstack([pos, pos + size])
 
-    def fix_cords(self, cords):
-        if 0 < cords[1][0] < self.parent.size().width() and 0 < cords[1][1] < self.parent.size().height():
-            if cords[0][0] < 0:
-                cords[0][0] = 0
-            if cords[0][1] < 0:
-                cords[0][1] = 0
+    def fix_cords(self, cords: np.array):
+        cords = np.round(cords).astype(int)
+        if np.array(cords[0, :] < cords[1, :]).all() and np.array(0 < cords[1, :]).all():
+            cords = np.clip(cords, 0, np.array(self.parent.size().toTuple()) - 1)
             return cords
         return None
 
-    def set_pix_cords(self, cords: [[int, int], [int, int]]):
+    def set_pix_cords(self, cords: np.array):
         cords = self.fix_cords(cords)
-        if cords:
-            self.move(QPoint(*cords[0]))
-            self.resize(QSize(cords[1][0] - cords[0][0], cords[1][1] - cords[0][1]))
+        if cords is not None:
+            self.move(QPoint(*tuple(cords[0, :])))
+            self.resize(QSize(*tuple(cords[1, :] - cords[0, :])))
 
-    def resize_save(self, event, point_1: QPoint, point_2: QPoint) -> None:
+    def resize_save_mod(self, event, point_1: QPoint, point_2: QPoint) -> None:
         if 0 <= point_1.x() < self.parent.size().width() and 0 <= point_1.y() < self.parent.size().height() and \
                 0 <= point_2.x() < self.parent.size().width() and 0 <= point_2.y() < self.parent.size().height():
             self.move(point_1)
@@ -105,7 +106,7 @@ class ResizableRect(QtWidgets.QWidget):
         else:
             self.mousePressPos = event.position().toPoint()
 
-    def move_save(self, event, point: QPoint) -> None:
+    def move_save_mod(self, event, point: QPoint) -> None:
         if 0 <= point.x() < self.parent.size().width() - self.size().width() and \
                 0 <= point.y() < self.parent.size().height() - self.size().height():
             self.move(point)

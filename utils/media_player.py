@@ -15,7 +15,7 @@ from ui.player_widgets import PlayerResizableRect
 class MediaPlayer(QMediaPlayer):
     media_format: MediaFormat
     meta_data: MetaData
-    mod_frame_rect: list
+    mod_frame_rect: np.array
     frames_time: list
     resizable_band: PlayerResizableRect
     tracker: ObjectTracker
@@ -66,12 +66,11 @@ class MediaPlayer(QMediaPlayer):
                 self.tracker.update_roi(self.curr_frame, self.mod_frame_rect[self.curr_frame_idx])
 
             self.curr_frame = np_array.copy()
-            self.resizable_band.set_cords([list(self.mod_frame_rect[self.curr_frame_idx][0]),
-                                           list(self.mod_frame_rect[self.curr_frame_idx][1])])
+            self.resizable_band.set_cords(self.mod_frame_rect[self.curr_frame_idx])
 
             cv2.rectangle(np_array,
-                          self.mod_frame_rect[self.curr_frame_idx][0],
-                          self.mod_frame_rect[self.curr_frame_idx][1],
+                          self.mod_frame_rect[self.curr_frame_idx, 0],
+                          self.mod_frame_rect[self.curr_frame_idx, 1],
                           (255, 255, 255), 3)
             self.frame_provider_modified.write_frame(np_array)
 
@@ -133,11 +132,9 @@ class MediaPlayer(QMediaPlayer):
 
     def setSource(self, source):
         self.meta_data = MetaData(source)
-        self.mod_frame_rect = [
-            [[round(self.meta_data.width / 4), round(self.meta_data.height / 4)],
-             [round(self.meta_data.width / 4 * 3), round(self.meta_data.height / 4 * 3)]]
-            for _ in range(round(self.meta_data.nb_frames * 1.01))
-        ]
+        self.mod_frame_rect = np.zeros(shape=(round(self.meta_data.nb_frames * 1.01), 2, 2), dtype=int)
+        self.mod_frame_rect[:, 0, :] = np.round(np.array([self.meta_data.width, self.meta_data.height]) / 4).astype(int)
+        self.mod_frame_rect[:, 1, :] = np.round(np.array([self.meta_data.width, self.meta_data.height]) / 4 * 3).astype(int)
         super().setSource(source)
         self.resizable_band = PlayerResizableRect(frame_res=[self.meta_data.width, self.meta_data.height],
                                                   parent=self.player_window.video_panel.videoWidget_2)
@@ -151,8 +148,8 @@ class MediaPlayer(QMediaPlayer):
             self.mod_frame_rect[self.curr_frame_idx] = self.resizable_band.get_cords()
             np_array = self.curr_frame.copy()
             cv2.rectangle(np_array,
-                          self.mod_frame_rect[self.curr_frame_idx][0],
-                          self.mod_frame_rect[self.curr_frame_idx][1],
+                          self.mod_frame_rect[self.curr_frame_idx, 0],
+                          self.mod_frame_rect[self.curr_frame_idx, 1],
                           (255, 255, 255), 3)
             self.frame_provider_modified.write_frame(np_array)
 
@@ -209,6 +206,3 @@ class MediaPlayer(QMediaPlayer):
         if self.playbackState() != QMediaPlayer.StoppedState:
             self.stop()
 
-#    def resizeEvent(self, event):
-#       print(True)
-#       return super(QWidget, self).resizeEvent(event)

@@ -1,6 +1,8 @@
 import sys
 
-from PySide6.QtCore import QStandardPaths
+import cv2
+from PySide6.QtCore import QStandardPaths, QUrl
+from PySide6.QtMultimedia import QMediaPlayer
 from PySide6.QtWidgets import QApplication, QDialog, QFileDialog
 import qt_material
 
@@ -19,6 +21,8 @@ class PlayerWindow(UIMainWindow):
 
         self.control_panel.volumeSlider.setValue(self.audio_output.volume() * 100)
         self.switch_control_state()
+
+        self.media_player.setSource(QUrl("/home/ghost/Desktop/VideoTrackingEffect-Editor/data/sample.mp4"))
 
         @self.menu_panel.actionOpen.set_trigger_func
         def onOpenVideo():
@@ -59,13 +63,11 @@ class PlayerWindow(UIMainWindow):
         def onSaveAsVideo():
             # onSaveVideo()
             import pandas as pd
-            import numpy as np
-            arr = np.array(self.media_player.mod_frame_rect)
             rect_dict = {
-                'x1': arr[:, 0, 0],
-                'y1': arr[:, 0, 1],
-                'x2': arr[:, 1, 0],
-                'y2': arr[:, 1, 1]
+                'x1': self.media_player.mod_frame_rect[:, 0, 0],
+                'y1': self.media_player.mod_frame_rect[:, 0, 1],
+                'x2': self.media_player.mod_frame_rect[:, 1, 0],
+                'y2': self.media_player.mod_frame_rect[:, 1, 1]
             }
             df = pd.DataFrame(rect_dict)
             df.to_csv('data/data.csv')
@@ -78,6 +80,18 @@ class PlayerWindow(UIMainWindow):
     def closeEvent(self, event):
         self.media_player.ensure_stopped()
         event.accept()
+
+    def resizeEvent(self, event):
+        if self.media_player.mediaStatus() == QMediaPlayer.MediaStatus.LoadedMedia:
+            self.media_player.resizable_band.set_cords(self.media_player.mod_frame_rect[self.media_player.curr_frame_idx])
+            self.media_player.mod_frame_rect[self.media_player.curr_frame_idx] = self.media_player.resizable_band.get_cords()
+            np_array = self.media_player.curr_frame.copy()
+            cv2.rectangle(np_array,
+                          self.media_player.mod_frame_rect[self.media_player.curr_frame_idx, 0],
+                          self.media_player.mod_frame_rect[self.media_player.curr_frame_idx, 1],
+                          (255, 255, 255), 3)
+            self.media_player.frame_provider_modified.write_frame(np_array)
+        return super().resizeEvent(event)
 
 
 if __name__ == '__main__':

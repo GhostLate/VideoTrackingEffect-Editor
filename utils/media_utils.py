@@ -60,11 +60,10 @@ class MediaFormat:
 
 
 def gaussian_filter_rects(rects):
-    arr = np.array(rects)
-    x1 = np.array(arr[:, 0, 0])
-    y1 = np.array(arr[:, 0, 1])
-    x2 = np.array(arr[:, 1, 0])
-    y2 = np.array(arr[:, 1, 1])
+    x1 = np.array(rects[:, 0, 0])
+    y1 = np.array(rects[:, 0, 1])
+    x2 = np.array(rects[:, 1, 0])
+    y2 = np.array(rects[:, 1, 1])
 
     x_c = np.round((x1 + x2) / 2).astype(int)
     y_c = np.round((y1 + y2) / 2).astype(int)
@@ -75,15 +74,17 @@ def gaussian_filter_rects(rects):
     y_lg = gaussian_filter1d(gaussian_filter1d(y_l, 10), 10)
     x_lg = gaussian_filter1d(gaussian_filter1d(x_l, 10), 10)
 
-    n_x1 = list(np.round(x_g - x_lg / 2).astype(int))
-    n_y1 = list(np.round(y_g - y_lg / 2).astype(int))
-    n_x2 = list(np.round(n_x1 + x_lg).astype(int))
-    n_y2 = list(np.round(n_y1 + y_lg).astype(int))
+    n_x1 = np.round(x_g - x_lg / 2).astype(int)
+    n_y1 = np.round(y_g - y_lg / 2).astype(int)
+    n_x2 = np.round(n_x1 + x_lg).astype(int)
+    n_y2 = np.round(n_y1 + y_lg).astype(int)
 
-    return [[[n_x1[i], n_y1[i]], [n_x2[i], n_y2[i]]] for i in range(len(rects))]
+    p1 = np.column_stack((n_x1, n_y1))
+    p2 = np.column_stack((n_x2, n_y2))
+    return np.stack([p1, p2], axis=1)
 
 
-def save_media(exist_path, save_path, rects, save_resolution: (int, int)):
+def save_media(exist_path, save_path, rects, save_resolution: (int, int), border=100):
     probe = ffmpeg.probe(exist_path)
     video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
     width = int(video_stream['width'])
@@ -91,24 +92,23 @@ def save_media(exist_path, save_path, rects, save_resolution: (int, int)):
     rects = gaussian_filter_rects(rects)
     r = save_resolution[0] / save_resolution[1]
     new_rects = []
-    for rect in rects:
-        w = rect[1][0] - rect[0][0]
-        h = rect[1][1] - rect[0][1]
-        x = 100
+    for i in range(rects.shape[0]):
+        w = rects[i, 1, 0] - rects[i, 0, 0]
+        h = rects[i, 1, 1] - rects[i, 0, 1]
         if w > h:
-            if w + x > width:
+            if w + border > width:
                 w = width
             else:
-                w += x
+                w += border
             n_w, n_h = w, w / r
         else:
-            if h + x > height:
+            if h + border > height:
                 h = height
             else:
-                h += x
+                h += border
             n_w, n_h = h * r, h
-        c_w = (rect[1][0] + rect[0][0]) / 2
-        c_h = (rect[1][1] + rect[0][1]) / 2
+        c_w = (rects[i, 1, 0] + rects[i, 0, 0]) / 2
+        c_h = (rects[i, 1, 1] + rects[i, 0, 1]) / 2
         new_rect = [[round(c_w - n_w / 2), round(c_h - n_h / 2)], [round(c_w + n_w / 2), round(c_h + n_h / 2)]]
         if new_rect[0][0] < 0:
             new_rect[1][0] += abs(new_rect[0][0])
