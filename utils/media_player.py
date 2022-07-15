@@ -15,7 +15,7 @@ from ui.player_widgets import PlayerResizableRect
 class MediaPlayer(QMediaPlayer):
     media_format: MediaFormat
     meta_data: MetaData
-    mod_frame_rect: np.array
+    frame_rects: np.array
     frames_time: list
     resizable_band: PlayerResizableRect
     tracker: ObjectTracker
@@ -38,43 +38,57 @@ class MediaPlayer(QMediaPlayer):
         self.frame_provider_modified.video_sink = self.player_window.video_panel.videoWidget_2.videoSink()
 
         self.track = True
-        self.last_frame_idx = 0
-        self.curr_frame_idx = 0
+        self.last_frame_id = 0
+        self.curr_frame_id = 0
         self.curr_frame_timestamp = 0
         self.curr_frame = np.array([])
-
+        self.i = -1
         def handle_video_frame_changed(video_frame: QVideoFrame):
+            self.i += 1
             self.curr_frame_timestamp = round(video_frame.startTime() / 1000)
-            self.curr_frame_idx = self.position2frame_id(self.curr_frame_timestamp)
-
+            self.curr_frame_id = self.position2frame_id(self.curr_frame_timestamp)
+            print(f"i: {self.i}, "
+                  f"curr_i: {self.curr_frame_id}, "
+                  f"s_t:{video_frame.startTime()}, "
+                  f"pos: {self.position()}, "
+                  f"t_i: {self.meta_data.timestamps[self.i]}, "
+                  f"t_curr_i: {self.meta_data.timestamps[self.curr_frame_id]} ")
             image = video_frame.toImage()
             np_array = q_image2numpy(image)
-
-            self.frame_provider_default.write_frame(np_array)
-
-            if (self.resizable_band.resizing or self.resizable_band.moving) and self.curr_frame_idx > 0:
-                self.mod_frame_rect[self.curr_frame_idx] = self.mod_frame_rect[self.curr_frame_idx - 1]
-            elif self.curr_frame_idx > 0 and self.last_frame_idx < self.curr_frame_idx:
-                bbox_exist, bbox = self.tracker.update_frame(np_array)
-                if not bbox_exist:
-                    self.tracker.update_roi(self.curr_frame, self.mod_frame_rect[self.curr_frame_idx - 1])
-                    bbox_exist, bbox = self.tracker.update_frame(np_array)
-                self.mod_frame_rect[self.curr_frame_idx] = bbox
-            elif self.curr_frame_idx == 0:
-                self.tracker.update_roi(np_array, self.mod_frame_rect[0])
-            else:
-                self.tracker.update_roi(self.curr_frame, self.mod_frame_rect[self.curr_frame_idx])
-
             self.curr_frame = np_array.copy()
-            self.resizable_band.set_cords(self.mod_frame_rect[self.curr_frame_idx])
+
+            if self.curr_frame_id > 0:
+                if (self.frame_rects[self.curr_frame_id, :2] == np.array([[0, 0], [0, 0]])).all():  # fix frames
+                    last_exist_rect_id = np.argwhere(
+                        np.all(self.frame_rects[:self.curr_frame_id, :2] > np.array([[0, 0], [0, 0]]), axis=(1, 2))
+                    )[-1]  # too slow
+                    self.frame_rects[self.curr_frame_id] = self.frame_rects[last_exist_rect_id]
+
+                if self.resizable_band.resizing or self.resizable_band.moving:
+                    self.frame_rects[self.curr_frame_id] = np.vstack(
+                        (self.frame_rects[self.curr_frame_id - 1, :2], [0, 1])
+                    )
+                elif self.curr_frame_id > self.last_frame_id:
+                    bbox_exist, bbox = self.tracker.update_frame(self.curr_frame)
+                    if not bbox_exist:
+                        self.tracker.update_roi(self.curr_frame, self.frame_rects[self.curr_frame_id - 1])
+                        bbox_exist, bbox = self.tracker.update_frame(self.curr_frame)
+                    self.frame_rects[self.curr_frame_id] = np.vstack((bbox, [1, 0]))
+                else:
+                    self.tracker.update_roi(self.curr_frame, self.frame_rects[self.curr_frame_id])
+            else:
+                self.tracker.update_roi(self.curr_frame, self.frame_rects[0])
+
+            self.resizable_band.set_cords(self.frame_rects[self.curr_frame_id])
 
             cv2.rectangle(np_array,
-                          self.mod_frame_rect[self.curr_frame_idx, 0],
-                          self.mod_frame_rect[self.curr_frame_idx, 1],
+                          self.frame_rects[self.curr_frame_id, 0],
+                          self.frame_rects[self.curr_frame_id, 1],
                           (255, 255, 255), 3)
+            self.frame_provider_default.write_frame(self.curr_frame)
             self.frame_provider_modified.write_frame(np_array)
 
-            self.last_frame_idx = self.curr_frame_idx
+            self.last_frame_id = self.curr_frame_id
 
         self.setVideoSink(QVideoSink(self))
         self.videoSink().videoFrameChanged.connect(handle_video_frame_changed)
@@ -89,52 +103,52 @@ class MediaPlayer(QMediaPlayer):
 
         @self.player_window.control_panel.backButton.set_clicked_func
         def onBackMedia():
-            if self.curr_frame_idx - 1 >= 0:
-                self.curr_frame_idx -= 1
-                self.curr_frame_timestamp = self.frame_id2position(self.curr_frame_idx)
+            if self.curr_frame_id - 1 >= 0:
+                self.curr_frame_id -= 1
+                self.curr_frame_timestamp = self.frame_id2position(self.curr_frame_id)
                 self.setPosition(self.curr_frame_timestamp)
 
         @self.player_window.control_panel.back10Button.set_clicked_func
         def onBack10Media():
-            if self.curr_frame_idx - 10 >= 0:
-                self.curr_frame_idx -= 10
-                self.curr_frame_timestamp = self.frame_id2position(self.curr_frame_idx)
+            if self.curr_frame_id - 10 >= 0:
+                self.curr_frame_id -= 10
+                self.curr_frame_timestamp = self.frame_id2position(self.curr_frame_id)
                 self.setPosition(self.curr_frame_timestamp)
             else:
-                self.curr_frame_idx = 0
-                self.curr_frame_timestamp = self.frame_id2position(self.curr_frame_idx)
+                self.curr_frame_id = 0
+                self.curr_frame_timestamp = self.frame_id2position(self.curr_frame_id)
                 self.setPosition(self.curr_frame_timestamp)
 
         @self.player_window.control_panel.nextButton.set_clicked_func
         def onNextMedia():
-            if self.curr_frame_idx + 1 < self.meta_data.nb_frames:
-                self.curr_frame_idx += 1
-                self.curr_frame_timestamp = self.frame_id2position(self.curr_frame_idx)
+            if self.curr_frame_id + 1 < self.meta_data.nb_frames:
+                self.curr_frame_id += 1
+                self.curr_frame_timestamp = self.frame_id2position(self.curr_frame_id)
                 self.setPosition(self.curr_frame_timestamp)
 
         @self.player_window.control_panel.next10Button.set_clicked_func
         def onNext10Media():
-            if self.curr_frame_idx + 10 < self.meta_data.nb_frames:
-                self.curr_frame_idx += 10
-                self.curr_frame_timestamp = self.frame_id2position(self.curr_frame_idx)
+            if self.curr_frame_id + 10 < self.meta_data.nb_frames:
+                self.curr_frame_id += 10
+                self.curr_frame_timestamp = self.frame_id2position(self.curr_frame_id)
                 self.setPosition(self.curr_frame_timestamp)
             else:
-                self.curr_frame_idx = self.meta_data.nb_frames - 1
-                self.curr_frame_timestamp = self.frame_id2position(self.curr_frame_idx)
+                self.curr_frame_id = self.meta_data.nb_frames - 1
+                self.curr_frame_timestamp = self.frame_id2position(self.curr_frame_id)
                 self.setPosition(self.duration())
 
         @self.player_window.time_panel.timeSlider.set_value_changed_func
         def onSliderPositionChanged():
             if self.player_window.time_panel.timeSlider.isPressed:
-                self.curr_frame_idx = int(self.player_window.time_panel.timeSlider.value())
-                self.curr_frame_timestamp = self.frame_id2position(self.curr_frame_idx)
+                self.curr_frame_id = int(self.player_window.time_panel.timeSlider.value())
+                self.curr_frame_timestamp = self.frame_id2position(self.curr_frame_id)
                 self.setPosition(self.curr_frame_timestamp)
 
     def setSource(self, source):
         self.meta_data = MetaData(source)
-        self.mod_frame_rect = np.zeros(shape=(round(self.meta_data.nb_frames * 1.01), 2, 2), dtype=int)
-        self.mod_frame_rect[:, 0, :] = np.round(np.array([self.meta_data.width, self.meta_data.height]) / 4).astype(int)
-        self.mod_frame_rect[:, 1, :] = np.round(np.array([self.meta_data.width, self.meta_data.height]) / 4 * 3).astype(int)
+        self.frame_rects = np.zeros(shape=(round(self.meta_data.nb_frames * 1.01), 3, 2), dtype=int)
+        self.frame_rects[0, 0, :] = np.round(np.array([self.meta_data.width, self.meta_data.height]) * 0.25).astype(int)
+        self.frame_rects[0, 1, :] = np.round(np.array([self.meta_data.width, self.meta_data.height]) * 0.75).astype(int)
         super().setSource(source)
         self.resizable_band = PlayerResizableRect(frame_res=[self.meta_data.width, self.meta_data.height],
                                                   parent=self.player_window.video_panel.videoWidget_2)
@@ -145,17 +159,17 @@ class MediaPlayer(QMediaPlayer):
 
         @self.resizable_band.set_frame_update_func
         def onFrameUpdate():
-            self.mod_frame_rect[self.curr_frame_idx] = self.resizable_band.get_cords()
+            self.frame_rects[self.curr_frame_id] = np.vstack((self.resizable_band.get_cords(), [0, 1]))
             np_array = self.curr_frame.copy()
             cv2.rectangle(np_array,
-                          self.mod_frame_rect[self.curr_frame_idx, 0],
-                          self.mod_frame_rect[self.curr_frame_idx, 1],
+                          self.frame_rects[self.curr_frame_id, 0],
+                          self.frame_rects[self.curr_frame_id, 1],
                           (255, 255, 255), 3)
             self.frame_provider_modified.write_frame(np_array)
 
         @self.resizable_band.set_data_update_func
         def onDataUpdate():
-            self.tracker.update_roi(self.curr_frame, self.mod_frame_rect[self.curr_frame_idx])
+            self.tracker.update_roi(self.curr_frame, self.frame_rects[self.curr_frame_id])
 
     def frame_id2position(self, frame_id: int) -> int:
         return self.meta_data.timestamps[frame_id]
@@ -165,7 +179,7 @@ class MediaPlayer(QMediaPlayer):
 
     @Slot()
     def onMediaPositionChange(self):
-        if self.curr_frame_idx < self.meta_data.nb_frames:
+        if self.curr_frame_id < self.meta_data.nb_frames:
             self.player_window.time_panel.timeSlider.setValue(self.position2frame_id(self.curr_frame_timestamp))
             self.player_window.time_panel.currentTimeLabel.setText(ms_to_hours(self.curr_frame_timestamp))
         else:
@@ -205,4 +219,3 @@ class MediaPlayer(QMediaPlayer):
     def ensure_stopped(self):
         if self.playbackState() != QMediaPlayer.StoppedState:
             self.stop()
-

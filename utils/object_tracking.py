@@ -42,8 +42,8 @@ class ObjectTracker:
     def update_roi(self, frame, bbox):
         self.frame_shape = np.array(frame.shape)
         bbox = self.fix_bbox(bbox)
-        bbox = np.round(bbox / self.res_rate).astype(int)
         if bbox is not None:
+            bbox = np.round(bbox / self.res_rate).astype(int)
             self.bbox = bbox
             self.bbox_exist = self.tracker.init(self.prepare_frame(frame), flatten_bbox(bbox))
             return self.bbox_exist

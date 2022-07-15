@@ -50,7 +50,7 @@ class PlayerWindow(UIMainWindow):
             if self.media_player.source().path():
                 result = save_media(self.media_player.source().path(),
                                     self.media_player.source().path().replace(".mp4", "_modded.mp4"),
-                                    self.media_player.mod_frame_rect,
+                                    self.media_player.frame_rects,
                                     (self.media_player.meta_data.width // 2, self.media_player.meta_data.height // 2))
                 if result:
                     self.show_status_message("Saved successfully.")
@@ -64,10 +64,10 @@ class PlayerWindow(UIMainWindow):
             # onSaveVideo()
             import pandas as pd
             rect_dict = {
-                'x1': self.media_player.mod_frame_rect[:, 0, 0],
-                'y1': self.media_player.mod_frame_rect[:, 0, 1],
-                'x2': self.media_player.mod_frame_rect[:, 1, 0],
-                'y2': self.media_player.mod_frame_rect[:, 1, 1]
+                'x1': self.media_player.frame_rects[:, 0, 0],
+                'y1': self.media_player.frame_rects[:, 0, 1],
+                'x2': self.media_player.frame_rects[:, 1, 0],
+                'y2': self.media_player.frame_rects[:, 1, 1]
             }
             df = pd.DataFrame(rect_dict)
             df.to_csv('data/data.csv')
@@ -83,12 +83,13 @@ class PlayerWindow(UIMainWindow):
 
     def resizeEvent(self, event):
         if self.media_player.mediaStatus() == QMediaPlayer.MediaStatus.LoadedMedia:
-            self.media_player.resizable_band.set_cords(self.media_player.mod_frame_rect[self.media_player.curr_frame_idx])
-            self.media_player.mod_frame_rect[self.media_player.curr_frame_idx] = self.media_player.resizable_band.get_cords()
+            cords = self.media_player.frame_rects[self.media_player.curr_frame_id].copy()
+            self.media_player.resizable_band.set_cords(cords)
+            self.media_player.frame_rects[self.media_player.curr_frame_id] = cords
             np_array = self.media_player.curr_frame.copy()
             cv2.rectangle(np_array,
-                          self.media_player.mod_frame_rect[self.media_player.curr_frame_idx, 0],
-                          self.media_player.mod_frame_rect[self.media_player.curr_frame_idx, 1],
+                          self.media_player.frame_rects[self.media_player.curr_frame_id, 0],
+                          self.media_player.frame_rects[self.media_player.curr_frame_id, 1],
                           (255, 255, 255), 3)
             self.media_player.frame_provider_modified.write_frame(np_array)
         return super().resizeEvent(event)

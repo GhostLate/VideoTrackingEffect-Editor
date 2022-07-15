@@ -7,7 +7,6 @@ from ui.player_layouts import ControlPanel, TimePanel, VideoPanel, MenuPanel
 
 
 class UIMainWindow(QMainWindow):
-
     def __init__(self):
         super().__init__()
         try:

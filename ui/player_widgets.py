@@ -107,9 +107,9 @@ class PlayerResizableRect(ResizableRect):
 
     def get_cords(self) -> np.array:
         pix_window_res = np.array(self.parent.size().toTuple())
-        window_res = self.pix2window_res(pix_window_res)
+        window_res = self.pix2window_res(pix_window_res.astype(float))
         pix_cords = self.get_pix_cords()
-        cords = self.pix_cords2cords(pix_cords, window_res, pix_window_res)
+        cords = self.pix_cords2cords(pix_cords.astype(float), window_res, pix_window_res.astype(float))
         return self.window_cords2frame_cords(cords, window_res)
 
     def pix_cords2cords(self, pix_cords, window_res, pix_window_res) -> np.array:
@@ -164,9 +164,9 @@ class PlayerResizableRect(ResizableRect):
 
     def set_cords(self, cords: np.array):
         pix_window_res = np.array(self.parent.size().toTuple())
-        window_res = self.pix2window_res(pix_window_res)
-        cords = self.frame_cords2window_cords(cords, window_res)
-        pix_cords = self.cords2pix_cords(cords, window_res, pix_window_res)
+        window_res = self.pix2window_res(pix_window_res.astype(float))
+        cords = self.frame_cords2window_cords(cords.astype(float), window_res)
+        pix_cords = self.cords2pix_cords(cords, window_res, pix_window_res.astype(float))
         self.set_pix_cords(pix_cords)
 
     def fix_cords(self, cords: np.array):

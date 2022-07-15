@@ -80,7 +80,7 @@ class ResizableRect(QtWidgets.QWidget):
         elif event.button() == QtCore.Qt.MouseButton.RightButton:
             self.moving = False
 
-    def get_pix_cords(self) -> [[int, int], [int, int]]:
+    def get_pix_cords(self) -> np.array:
         pos = np.array(self.pos().toTuple())
         size = np.array(self.size().toTuple())
         return np.vstack([pos, pos + size])
